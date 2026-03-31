@@ -1,0 +1,35 @@
+default_workflow_ref: evaluate-vendors
+
+workflows:
+  - id: evaluate-vendors
+    name: "Full Vendor Evaluation"
+    description: "Multi-agent vendor evaluation pipeline: research → score → compliance check → report → review"
+    phases:
+      - parse-request
+      - research-vendors
+      - score-vendors
+      - check-compliance:
+          on_verdict:
+            needs-more-info:
+              target: research-vendors
+            has-blockers:
+              target: generate-report
+            all-clear:
+              target: generate-report
+          max_rework_attempts: 2
+      - generate-report
+      - review-report:
+          on_verdict:
+            rework:
+              target: generate-report
+          max_rework_attempts: 2
+    post_success:
+      notify:
+        message: "Vendor evaluation complete. Reports are in output/. Top recommendation is in output/executive-recommendation.md."
+
+  - id: quick-compare
+    name: "Quick Vendor Comparison"
+    description: "Lightweight 2-vendor comparison — research and score in a single pass, produces quick-comparison.md"
+    phases:
+      - parse-quick
+      - research-and-score

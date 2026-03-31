@@ -1,0 +1,25 @@
+mcp_servers:
+  filesystem:
+    command: npx
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-filesystem"
+      - "/Users/samishukri/ao-examples/examples/vendor-evaluator"
+
+  fetch:
+    command: npx
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-fetch"
+
+  sequential-thinking:
+    command: npx
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-sequential-thinking"
+
+  memory:
+    command: npx
+    args:
+      - "-y"
+      - "@modelcontextprotocol/server-memory"

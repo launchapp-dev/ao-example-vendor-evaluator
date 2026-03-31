@@ -1,0 +1,211 @@
+phases:
+  # ─── evaluate-vendors workflow phases ────────────────────────────────────────
+
+  parse-request:
+    mode: command
+    directive: |
+      Validate and normalize the evaluation request from config/evaluation-request.yaml.
+      Check that vendors list is non-empty, criteria weights sum to 100, and all required
+      fields are present. Write normalized output to data/active-evaluation.json.
+      Exit 1 if validation fails.
+    capabilities:
+      writes_files: true
+    command:
+      program: bash
+      args: ["-c", "bash scripts/parse-request.sh"]
+      cwd_mode: project_root
+      timeout_secs: 30
+
+  research-vendors:
+    mode: agent
+    agent: researcher
+    directive: |
+      Read data/active-evaluation.json to get the list of vendors and their URLs.
+      For each vendor, use the fetch MCP to retrieve and analyze:
+        1. The vendor's homepage (use the URL from active-evaluation.json)
+        2. Their pricing page (try appending /pricing to the base URL)
+        3. Their features or product page (try /features or /product)
+        4. If available, search for their G2 or Capterra reviews page
+
+      Extract structured information from each page and write one JSON file per vendor
+      to data/research/{vendor-slug}.json following the schema in your system prompt.
+
+      Write a summary of research outcomes to data/research/research-summary.json.
+
+      Be thorough — the scoring and compliance phases depend entirely on what you find here.
+      If a page returns an error or is inaccessible, note it as a gap rather than fabricating data.
+    capabilities:
+      writes_files: true
+    retry_policy:
+      max_attempts: 2
+      retry_on: [tool_error, timeout]
+
+  score-vendors:
+    mode: agent
+    agent: scorer
+    directive: |
+      Read data/active-evaluation.json for criteria and weights.
+      Read all files in data/research/ to get vendor research data.
+      Use sequential-thinking to structure your scoring methodology before assigning any scores.
+
+      For each vendor, score every criterion 1-10 with written justification grounded in
+      the research data. Calculate weighted scores. Identify data gaps.
+
+      Write per-vendor scores to data/scores/{vendor-slug}.json.
+      Write the consolidated side-by-side matrix to data/scores/score-matrix.json.
+
+      Scoring calibration guide:
+        9-10: Exceptional — industry-leading, multiple concrete evidence points
+        7-8: Strong — clear evidence of above-average capability
+        5-6: Adequate — meets baseline expectations, some gaps
+        3-4: Below average — notable gaps or weaknesses
+        1-2: Poor — significant failure in this area, or no data at all
+
+      Maintain consistent calibration across all vendors — a 7 for Vendor A on pricing must
+      mean the same thing as a 7 for Vendor B on pricing.
+    capabilities:
+      writes_files: true
+
+  check-compliance:
+    mode: agent
+    agent: compliance-checker
+    directive: |
+      Read data/active-evaluation.json for hard requirements.
+      Read config/compliance-checklist.yaml for the security checklist.
+      Read all files in data/research/ for each vendor's public information.
+
+      For each vendor, evaluate compliance across: security certifications, data handling,
+      access control, vendor stability, and hard requirements from the evaluation request.
+
+      Write per-vendor findings to data/compliance/{vendor-slug}.json.
+      Write a consolidated summary to data/compliance/compliance-summary.json.
+
+      Your verdict must reflect the most critical finding:
+        - "needs-more-info": Use this ONLY if key compliance data is genuinely absent from
+          research and a second research pass could plausibly retrieve it. Include specific
+          URLs to fetch in the "unknowns" field.
+        - "has-blockers": Use when a vendor explicitly fails a hard requirement or a critical
+          security control. Include specific blocker strings.
+        - "all-clear": All hard requirements pass or have a credible workaround. No critical
+          security gaps. Note any medium-risk items in reasoning.
+
+      Emit your decision_contract JSON as the final line of your response.
+    capabilities:
+      writes_files: true
+    decision_contract:
+      required_fields: [verdict, reasoning, blockers, unknowns]
+
+  generate-report:
+    mode: agent
+    agent: report-writer
+    directive: |
+      Read all available data:
+        - data/active-evaluation.json (evaluation context, criteria, weights)
+        - data/research/*.json (vendor research)
+        - data/scores/score-matrix.json (consolidated scores)
+        - data/scores/*.json (per-vendor detailed scores)
+        - data/compliance/compliance-summary.json (overall compliance verdict)
+        - data/compliance/*.json (per-vendor compliance findings)
+
+      Use the memory MCP to check for prior evaluations in the same category before writing.
+
+      Generate three output files:
+        1. output/comparison-matrix.md — side-by-side table with scores and compliance status
+        2. output/executive-recommendation.md — full executive memo with recommendation
+        3. output/detailed-scores.md — complete scoring breakdown with methodology
+
+      Store evaluation summary in memory MCP and write data/history/{evaluation_id}.json.
+
+      Ensure the recommendation in the executive memo aligns with the scores. If compliance
+      blockers exist, prominently flag affected vendors with a ⚠️ COMPLIANCE RISK callout.
+
+      Create the output/ directory if it does not exist.
+    capabilities:
+      writes_files: true
+      mutates_state: true
+
+  review-report:
+    mode: agent
+    agent: scorer
+    directive: |
+      Review the final reports generated in output/ for quality and accuracy.
+
+      Check the following:
+        1. Does the recommended vendor in executive-recommendation.md have the highest score
+           in score-matrix.json? If not, is the deviation clearly justified?
+        2. Are all vendors from data/active-evaluation.json represented in the comparison matrix?
+        3. Are compliance blockers (from data/compliance/compliance-summary.json) properly
+           flagged in both the matrix and the executive recommendation?
+        4. Does the detailed-scores.md cite specific research data, not just assertions?
+        5. Is the TL;DR accurate and non-misleading?
+
+      If everything checks out, verdict is "approve".
+      If you find issues, verdict is "rework" and list specific issues that need correction.
+
+      Emit your decision_contract JSON as the final line of your response.
+    capabilities:
+      reads_files: true
+    decision_contract:
+      required_fields: [verdict, reasoning, issues]
+
+  # ─── quick-compare workflow phases ───────────────────────────────────────────
+
+  parse-quick:
+    mode: command
+    directive: |
+      Parse two vendor names and URLs from the subject description and create a minimal
+      evaluation request. Write to data/active-evaluation.json with default SaaS criteria.
+    capabilities:
+      writes_files: true
+    command:
+      program: bash
+      args:
+        - "-c"
+        - |
+          mkdir -p data
+          cat > data/active-evaluation.json << 'EOJSON'
+          {
+            "evaluation_id": "quick-{{subject_id}}",
+            "category": "Quick Compare",
+            "description": "{{subject_description}}",
+            "vendors": [],
+            "criteria": [
+              { "name": "Features", "weight": 30, "description": "Core feature set and capabilities" },
+              { "name": "Pricing", "weight": 25, "description": "Cost and value for money" },
+              { "name": "Support", "weight": 20, "description": "Support quality and documentation" },
+              { "name": "Security", "weight": 15, "description": "Security certifications and data handling" },
+              { "name": "Ease of Use", "weight": 10, "description": "Onboarding and UI quality" }
+            ],
+            "hard_requirements": []
+          }
+          EOJSON
+          echo "Quick evaluation template created. Agent will parse vendor details from description."
+      cwd_mode: project_root
+      timeout_secs: 15
+
+  research-and-score:
+    mode: agent
+    agent: scorer
+    directive: |
+      This is a quick 2-vendor comparison. Read the description from data/active-evaluation.json.
+      Parse the two vendor names and their URLs from the description field.
+
+      For each vendor, use the fetch MCP (through filesystem if needed) to research:
+        - Their homepage and pricing page
+        - Any available review data
+
+      Apply the default criteria rubric from data/active-evaluation.json (Features 30%,
+      Pricing 25%, Support 20%, Security 15%, Ease of Use 10%).
+
+      Use sequential-thinking to structure your comparison analysis.
+
+      Write a single markdown comparison document to output/quick-comparison.md:
+        - **TL;DR**: One sentence on which vendor wins for this use case
+        - **Side-by-side table**: All criteria with scores for each vendor
+        - **Vendor A Profile**: 2-3 paragraphs, pros/cons
+        - **Vendor B Profile**: 2-3 paragraphs, pros/cons
+        - **Recommendation**: Which to choose and why, with caveats
+
+      Create the output/ directory if it does not exist.
+    capabilities:
+      writes_files: true

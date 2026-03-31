@@ -1,0 +1,85 @@
+# Compliance and security checklist applied to every vendor evaluation.
+# The compliance-checker agent uses this as its evaluation rubric.
+
+security:
+  - item: "SOC 2 Type II certification"
+    severity: high
+    how_to_check: "Look for 'SOC 2' on their security or trust page. Type II is current; Type I is less rigorous."
+  - item: "ISO 27001 certification"
+    severity: medium
+    how_to_check: "Look for 'ISO 27001' on their security page or downloadable trust report."
+  - item: "Data encryption at rest (AES-256 or equivalent)"
+    severity: high
+    how_to_check: "Security or privacy page should mention encryption standard and key management."
+  - item: "Data encryption in transit (TLS 1.2+)"
+    severity: high
+    how_to_check: "Verify HTTPS on all endpoints; security page may state TLS version."
+  - item: "Regular penetration testing by third party"
+    severity: medium
+    how_to_check: "Trust page or security page often mentions annual pen tests or links to reports."
+  - item: "Vulnerability disclosure / bug bounty program"
+    severity: low
+    how_to_check: "Look for a security.txt or bug bounty page (e.g., HackerOne)."
+  - item: "Incident response plan published"
+    severity: medium
+    how_to_check: "Check their security or trust page for an incident response or breach notification policy."
+
+data_handling:
+  - item: "GDPR compliance (for EU personal data)"
+    severity: high
+    how_to_check: "Privacy policy must mention GDPR. Look for DPA (Data Processing Agreement) availability."
+  - item: "CCPA compliance (for California residents)"
+    severity: medium
+    how_to_check: "Privacy policy should mention CCPA and provide opt-out mechanism."
+  - item: "Data residency options (EU, US, specific region)"
+    severity: medium
+    how_to_check: "Check pricing or enterprise pages for data residency or region selection."
+  - item: "Data export capability in standard format"
+    severity: high
+    how_to_check: "Feature pages or documentation should describe export to CSV/JSON/standard formats."
+  - item: "Right to deletion / data erasure on request"
+    severity: high
+    how_to_check: "Privacy policy should describe data deletion process and timeline."
+  - item: "Subprocessor list published"
+    severity: medium
+    how_to_check: "Look for a 'subprocessors' or 'third-party services' list, often linked from DPA."
+  - item: "Data retention policy documented"
+    severity: medium
+    how_to_check: "Privacy policy should specify how long data is retained after account closure."
+
+access_control:
+  - item: "SSO / SAML 2.0 support"
+    severity: high
+    how_to_check: "Feature list or integrations page. Often listed under 'Enterprise' or 'Security' features."
+  - item: "Role-based access control (RBAC)"
+    severity: high
+    how_to_check: "Feature list should mention admin roles, permission levels, or RBAC."
+  - item: "Multi-factor authentication (MFA/2FA)"
+    severity: high
+    how_to_check: "Security settings or feature page. May also be enforced at the organization level."
+  - item: "Audit logging (user activity logs)"
+    severity: medium
+    how_to_check: "Admin or enterprise feature pages often mention audit trails or activity logs."
+  - item: "API key / token management"
+    severity: medium
+    how_to_check: "API documentation should describe API key scoping, rotation, and revocation."
+  - item: "IP allowlisting / network restrictions"
+    severity: low
+    how_to_check: "Enterprise security settings often include IP restriction features."
+
+vendor_stability:
+  - item: "Years in business (5+ years preferred)"
+    severity: medium
+    how_to_check: "About page, LinkedIn, or Crunchbase. Founded date indicates longevity."
+  - item: "Funding stage and backing"
+    severity: medium
+    how_to_check: "Crunchbase or press mentions. Series B+ or profitable preferred for stability."
+  - item: "Customer base size (1000+ customers signals stability)"
+    severity: low
+    how_to_check: "About or customers page often lists customer count or well-known logos."
+  - item: "Active product development (releases in last 6 months)"
+    severity: medium
+    how_to_check: "Changelog or blog should show recent feature releases and bug fixes."
+  - item: "Acquisition risk assessment"
+    severity: low
+    how_to_check: "If recently acquired or frequently rumored, assess impact on roadmap/pricing."

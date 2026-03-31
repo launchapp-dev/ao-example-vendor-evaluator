@@ -1,0 +1,37 @@
+evaluation_id: eval-2024-crm-001
+category: CRM
+description: "Evaluate CRM platforms for a 50-person sales team"
+
+vendors:
+  - name: HubSpot
+    url: https://www.hubspot.com
+  - name: Salesforce
+    url: https://www.salesforce.com
+  - name: Pipedrive
+    url: https://www.pipedrive.com
+
+criteria:
+  - name: Pricing
+    weight: 25
+    description: "Cost per seat, total cost of ownership, hidden fees, and free tier availability"
+  - name: Features
+    weight: 25
+    description: "Contact management, pipeline tracking, reporting, email automation, and workflow automation"
+  - name: Ease of Use
+    weight: 15
+    description: "Onboarding time, UI quality, mobile app, learning curve for non-technical users"
+  - name: Integrations
+    weight: 15
+    description: "API quality, native integrations with common tools, Zapier/webhook support"
+  - name: Support
+    weight: 10
+    description: "Response time, available channels (chat/email/phone), documentation quality"
+  - name: Security & Compliance
+    weight: 10
+    description: "SOC2 certification, GDPR compliance, data encryption, access controls"
+
+hard_requirements:
+  - "Must have API access (REST or GraphQL)"
+  - "Must support SSO/SAML for enterprise login"
+  - "Must offer data export in standard format (CSV or JSON)"
+  - "Must support custom fields on contact and deal records"
